@@ -484,7 +484,12 @@ public class Wordle
      */
     public static void main(String[] args)
     {
-        Wordle wordle = new Wordle();
-        wordle.play();
+        // Run the game in a repeatable manner with a prompt for playing again
+        do
+        {
+            Wordle wordle = new Wordle();
+            wordle.play();
+            System.out.println("Play again? (y/n)");
+        } while (KEYBOARD_IN.nextLine().equalsIgnoreCase("y"));
     }
 }
