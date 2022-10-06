@@ -1,3 +1,9 @@
+/**
+ * Name: Java-Wordle-Example
+ * Author: Adalyia
+ * Date: 2022-10-06
+ * Description: This is an example of how to create a game class for Wordle in Java without creating custom data types.
+ */
 package com.adalyia.games;
 
 import java.io.IOException;
@@ -445,7 +451,7 @@ public class Wordle
         System.out.printf("%s letters are in the word at the correct position%n", colorize("Green", ANSI_GREEN));
         System.out.printf("%s letters are in the word at the wrong position%n", colorize("Yellow", ANSI_YELLOW));
         System.out.printf("%s letters are not in the word at all %n", colorize("White", ANSI_WHITE));
-        
+
         // Our game loop, runs until the user guesses the word or runs out of guesses
         while (!this.isComplete())
         {
