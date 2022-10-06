@@ -42,8 +42,7 @@ public class Wordle
     public Wordle(String answer)
     {
         this.loadWords();
-        answer = answer.toLowerCase();
-        this.setAnswer(answer);
+        this.setAnswer(answer.toLowerCase());
     }
 
     // Getters & Setters
@@ -55,7 +54,7 @@ public class Wordle
      */
     public String getAnswer()
     {
-        return answer;
+        return this.answer;
     }
 
     /**
@@ -65,13 +64,13 @@ public class Wordle
      * @throws IllegalArgumentException if the answer is not a valid word
      * @throws IllegalStateException    if the game has already started
      */
-    private void setAnswer(String answer)
+    public void setAnswer(String answer)
     {
-        if (!validateWord(answer))
+        if (!this.validateWord(answer))
         {
             throw new IllegalArgumentException("Answer must be a valid word in the Wordle dictionary");
         }
-        if (started)
+        if (this.isStarted())
         {
             throw new IllegalStateException("Game has already started.");
         }
@@ -115,6 +114,15 @@ public class Wordle
     }
 
     /**
+     * Gets the number of remaining guesses in the game
+     * @return The current game's number of remaining guesses
+     */
+    public int getRemainingGuesses()
+    {
+        return this.getMaxGuesses() - this.getGuessesMade();
+    }
+
+    /**
      * Gets the word length for the current Wordle instance
      * @return The current game's word length
      */
@@ -152,7 +160,6 @@ public class Wordle
             throw new IllegalStateException("Game has already started.");
         }
         this.answersList = answersList;
-        this.dictionaryList.addAll(answersList);
     }
 
     /**
@@ -175,7 +182,25 @@ public class Wordle
             throw new IllegalStateException("Game has already started.");
         }
         this.dictionaryList = dictionaryList;
-        this.dictionaryList.addAll(this.answersList);
+        this.dictionaryList.addAll(this.getAnswersList());
+    }
+
+    /**
+     * Checks whether the user won the game
+     * @return Whether the user won the game
+     */
+    public boolean isWinner()
+    {
+        return this.getLastGuess().equalsIgnoreCase(this.getAnswer());
+    }
+
+    /**
+     * Checks whether the game is complete or not
+     * @return Whether the game is complete or not
+     */
+    public boolean isComplete()
+    {
+        return this.getGuessesMade() >= this.getMaxGuesses() || this.isWinner();
     }
 
     // Core Game Methods
@@ -188,8 +213,8 @@ public class Wordle
         try
         {
             // Load the list of possible answers
-            this.answersList = Files.readAllLines(Path.of(Objects.requireNonNull(this.getClass().getResource("answers_list.txt")).toURI()));
-            System.out.printf("Loaded %d potential answers from disk%n", answersList.size());
+            this.setAnswersList(Files.readAllLines(Path.of(Objects.requireNonNull(this.getClass().getResource("answers_list.txt")).toURI())));
+            System.out.printf("Loaded %d potential answers from disk%n", this.getAnswersList().size());
         }
         catch (NullPointerException | IOException | URISyntaxException ex)
         {
@@ -198,10 +223,9 @@ public class Wordle
         }
         try
         {
-            // Load the list of possible answers
-            this.dictionaryList = Files.readAllLines(Path.of(Objects.requireNonNull(this.getClass().getResource("dictionary_list.txt")).toURI()));
-            this.dictionaryList.addAll(this.answersList);
-            System.out.printf("Loaded %d dictionary words from disk%n", dictionaryList.size());
+            // Load the list of dictionary words
+            this.setDictionaryList(Files.readAllLines(Path.of(Objects.requireNonNull(this.getClass().getResource("dictionary_list.txt")).toURI())));
+            System.out.printf("Loaded %d dictionary words from disk%n", this.getDictionaryList().size());
         }
         catch (NullPointerException | IOException | URISyntaxException ex)
         {
@@ -219,7 +243,7 @@ public class Wordle
     private String getRandomAnswer()
     {
         Random random = new Random();
-        return this.answersList.get(random.nextInt(this.answersList.size()));
+        return this.getAnswersList().get(random.nextInt(this.getAnswersList().size()));
     }
 
     /**
@@ -230,7 +254,7 @@ public class Wordle
      */
     private boolean validateWord(String word)
     {
-        return this.dictionaryList.contains(word.toLowerCase());
+        return this.getDictionaryList().contains(word.toLowerCase());
     }
 
     /**
@@ -243,7 +267,7 @@ public class Wordle
     {
         // Temporary vars needed to grade a guess
         HashMap<Character, Integer> answerLetters = new HashMap<>();  // Map of <Letter, Num Of Occurrences>
-        String[][] gradedGuess = new String[WORD_LENGTH][2];  // The returned graded guess
+        String[][] gradedGuess = new String[this.getWordLength()][2];  // The returned graded guess
         char guessLetter;  // Storage for the current character in the guess
         char answerLetter;  // Storage for the current character in the answer
 
@@ -261,7 +285,7 @@ public class Wordle
         }
 
         // Do an initial pass where we grade correct letters in the correct pos and decrement the answerLetters map
-        for (int i = 0; i < WORD_LENGTH; i++)
+        for (int i = 0; i < this.getWordLength(); i++)
         {
             guessLetter = guess.charAt(i);
             answerLetter = this.getAnswer().charAt(i);
@@ -275,7 +299,7 @@ public class Wordle
         }
 
         // Do a second pass where we grade correct letters in the wrong pos and decrement the answerLetters map
-        for (int i = 0; i < WORD_LENGTH; i++)
+        for (int i = 0; i < this.getWordLength(); i++)
         {
             guessLetter = guess.charAt(i);
             answerLetter = this.getAnswer().charAt(i);
@@ -308,11 +332,11 @@ public class Wordle
         this.started = true;
 
         // Guard clauses for invalid words or a bad game state
-        if (this.guessesMade >= MAX_GUESSES || this.currentGuess.equalsIgnoreCase(this.getAnswer()))
+        if (this.isComplete())
         {
             throw new IllegalStateException("Game has already ended.");
         }
-        if (!validateWord(guess))
+        if (!this.validateWord(guess))
         {
             throw new IllegalArgumentException("Guess must be a valid 5-letter word");
         }
@@ -371,15 +395,15 @@ public class Wordle
     private void printBoard()
     {
         // If there's 0 guesses or attempts made there's nothing to print
-        if (this.guessesMade == 0)
+        if (this.getGuessesMade() == 0)
         {
             return;
         }
 
         // Draw the upper bound of the game board
-        System.out.printf("+%s+%n", "-".repeat(WORD_LENGTH));
+        System.out.printf("+%s+%n", "-".repeat(this.getWordLength()));
 
-        for (int i = 0; i < this.guessesMade; i++)
+        for (int i = 0; i < this.getGuessesMade(); i++)
         {
             // Draw the left bound of the game board
             System.out.print("|");
@@ -398,11 +422,11 @@ public class Wordle
         }
 
         // Draw the lower bound of the game board
-        System.out.printf("+%s+%n", "-".repeat(WORD_LENGTH));
+        System.out.printf("+%s+%n", "-".repeat(this.getWordLength()));
 
         // Show stats/current information
-        System.out.printf("Guesses made: %d%n", this.guessesMade);
-        System.out.printf("Guesses left: %d%n", MAX_GUESSES - this.guessesMade);
+        System.out.printf("Guesses made: %d%n", this.getGuessesMade());
+        System.out.printf("Guesses left: %d%n", this.getRemainingGuesses());
 
     }
 
@@ -421,11 +445,9 @@ public class Wordle
         System.out.printf("%s letters are in the word at the correct position%n", colorize("Green", ANSI_GREEN));
         System.out.printf("%s letters are in the word at the wrong position%n", colorize("Yellow", ANSI_YELLOW));
         System.out.printf("%s letters are not in the word at all %n", colorize("White", ANSI_WHITE));
-
-        System.out.println(this.getAnswer());
-
+        
         // Our game loop, runs until the user guesses the word or runs out of guesses
-        while (this.guessesMade < MAX_GUESSES && !this.currentGuess.equalsIgnoreCase(this.answer))
+        while (!this.isComplete())
         {
             // Print the board
             this.printBoard();
@@ -438,7 +460,7 @@ public class Wordle
         this.printBoard();
 
         // Check if the user won or lost
-        if (this.currentGuess.equalsIgnoreCase(this.answer))
+        if (this.isWinner())
         {
             System.out.println("You win!");
         }
